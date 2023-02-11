@@ -1,0 +1,199 @@
+---
+title: "Project_Analysis"
+author: "Jayant Yadav"
+date: "2023-02-11"
+output: html_document
+---
+
+
+## Loading the required Packages and Libraries
+
+
+
+```{r }
+install.packages("tidyverse")
+library(tidyverse)
+
+```
+
+## Load The Dataset
+
+The data is stored in excel files that first loaded into R environment know moving these excel files to the dataframe and combining them into a single data frame
+
+### loading the data into dataframe
+
+```{r }
+df1 <- read_csv("202101-divvy-tripdata.csv")
+df2 <- read_csv("202102-divvy-tripdata.csv")
+```
+
+### Combining both the Dataframe
+
+```{r }
+complete_data <- rbind(df1,df2)
+```
+
+now we have all the dataset in a single dataframe (complete_data), so there is no need of df1 and df2 we will remove them from the memory.
+
+
+### Removing the temporary Dataframe
+
+``` {r}
+rm(df1)
+rm(df2)
+```
+
+## load and view the Complete data
+
+Now we have the required data in one place so we will load the data and have a look on the dataset what are the different fields we have in our dataset and if any data cleaning is required or not.
+
+```{r}
+
+view(complete_data)
+
+head(complete_data)
+
+nrow(complete_data)
+
+colnames(complete_data)
+
+str(complete_data)
+
+glimpse(complete_data)
+```
+
+After looking into the data, it was found that below 2 mentioned variables have incorrect data types:
+* started_at
+* ended_at
+
+Changing the datatype of both the variables to the Date type.
+
+```{r}
+
+complete_data$started_at <- as.Date(complete_data$started_at,format = "%d-%m-%y")
+complete_data$ended_at <- as.Date(complete_data$ended_at,format = "%d-%m-%y")
+
+
+```
+
+Now will check the complete summary of our data that will give us the brief idea about each variables.
+
+
+```{r}
+
+summary(complete_data)
+
+```
+
+## Cleaning Data
+
+Now we will clean or filter our data, in the given dataset there are some 0 values in ride_length in this some data is not proper. How this field is calculated :
+  Ride_length = started_at - ended_at
+  
+so there are some records where both the started_at and ended_at are same or there are some records in which ended_at is greater than started_at.
+
+So, removing all these incorrect data and considering only where ride_length is graeter than zero.
+
+```{r}
+
+complete_data <-complete_data %>% 
+  filter(ride_length>0)
+print("Cleaned data Count:")
+nrow(complete_data)
+
+```
+
+## Descriptive Analytics
+
+### overall Data
+
+```{r}
+
+complete_data %>% 
+  summarize(mean(ride_length),max(ride_length))
+```
+
+### Based on member and weekdays
+
+```{r}
+complete_data %>% 
+  group_by(member_casual, day_of_week) %>% 
+  summarise(count=n(),min(ride_length),max(ride_length),mean(ride_length),median(ride_length)) %>% 
+  arrange(member_casual,count)
+```
+
+### Average ride length by user type and weekdays
+
+``` {r}
+complete_data %>% 
+  group_by(member_casual,day_of_week) %>% 
+  summarise(average_duration = mean(ride_length)) %>% 
+  arrange(member_casual,-average_duration)
+```
+
+### Summarizing the data
+
+``` {r}
+complete_data %>% 
+  group_by(member_casual) %>% 
+  summarize(count=n(),total_pop=nrow(complete_data),share=count/total_pop*100,mean(ride_length))
+
+```
+
+
+## Visualizing the Data
+
+Now we will look the data visually to get a better idea of our analysis.
+
+### Weekwise count of users
+
+This data shows us the count of rides in different week days, it is visible from the graph that casual members has slightly higher count than regular on Saturday.
+
+
+``` {r}
+complete_data %>% 
+  group_by(member_casual,day_of_week) %>% 
+  summarise(no_of_rides= n()) %>% 
+  ggplot(aes(y=day_of_week,x=no_of_rides, fill=member_casual))+geom_col()+
+  labs(title = "Weekwise count of users")
+```
+
+
+### Average ride length of users
+
+This data shows us the average duration of ride length of members and casual users. With the below mentioned visuals it is clear that those who are not members are generally those people who prefer bikes for longer duration.
+
+
+```{r}
+complete_data %>% 
+  group_by(member_casual,day_of_week) %>%
+  summarise(avg_duration = mean(ride_length)) %>%
+  ggplot(mapping = aes(x=avg_duration, y=day_of_week, fill=member_casual))+geom_col()+
+  labs(title="Average duration of ride length")
+```
+
+### Minimum duration ride length of users
+
+This data shows us the minimum duration of ride length of members and casual users.
+
+```{r}
+
+complete_data %>% 
+  group_by(member_casual,day_of_week) %>%
+  summarise(min_duration = min(ride_length)) %>%
+  ggplot(mapping = aes(x=min_duration, y=day_of_week, fill=member_casual))+geom_col()+
+  labs(title="Minimum duration of ride length")
+```
+
+
+### Maximum duration ride length of users
+
+This data shows us the maximum duration of ride length of members and casual users.
+
+```{r}
+complete_data %>% 
+  group_by(member_casual,day_of_week) %>%
+  summarise(max_duration = max(ride_length)) %>%
+  ggplot(mapping = aes(x=max_duration, y=day_of_week, fill=member_casual))+geom_col()+
+  labs(title="Maximum duration of ride length")
+```
